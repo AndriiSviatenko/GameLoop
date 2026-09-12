@@ -1,0 +1,26 @@
+{
+    "name": "Azen.GameLoop.Samples.VContainer",
+    "rootNamespace": "Azen.GameLoop.Samples.VContainer",
+    "references": [
+        "Azen.GameLoop",
+        "UniTask",
+        "VContainer"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": false,
+    "defineConstraints": [
+        "AZEN_VCONTAINER"
+    ],
+    "versionDefines": [
+        {
+            "name": "jp.hadashikick.vcontainer",
+            "expression": "",
+            "define": "AZEN_VCONTAINER"
+        }
+    ],
+    "noEngineReferences": false
+}

@@ -1,0 +1,17 @@
+{
+    "name": "Azen.GameLoop.Samples.Manual",
+    "rootNamespace": "Azen.GameLoop.Samples.Manual",
+    "references": [
+        "Azen.GameLoop",
+        "UniTask"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": false,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

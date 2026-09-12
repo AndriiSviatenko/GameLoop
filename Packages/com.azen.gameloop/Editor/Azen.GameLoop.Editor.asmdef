@@ -1,0 +1,19 @@
+{
+    "name": "Azen.GameLoop.Editor",
+    "rootNamespace": "Azen.GameLoop.Editor",
+    "references": [
+        "Azen.GameLoop",
+        "UniTask"
+    ],
+    "includePlatforms": [
+        "Editor"
+    ],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

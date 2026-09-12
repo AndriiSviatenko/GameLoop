@@ -1,0 +1,43 @@
+{
+  "name": "com.azen.gameloop",
+  "displayName": "Azen GameLoop",
+  "version": "1.0.0",
+  "unity": "6000.0",
+  "description": "Portable, DI-agnostic game-loop kernel for Unity 6 / UniTask. Owns lifecycle state, multi-channel pause, per-frame ticking and timers.",
+  "license": "MIT",
+  "documentationUrl": "https://andriisviatenko.github.io/GameLoop/",
+  "changelogUrl": "https://github.com/AndriiSviatenko/GameLoop/blob/main/Packages/com.azen.gameloop/CHANGELOG.md",
+  "licensesUrl": "https://github.com/AndriiSviatenko/GameLoop/blob/main/LICENSE",
+  "author": {
+    "name": "AndriiSviatenko",
+    "url": "https://github.com/AndriiSviatenko"
+  },
+  "keywords": [
+    "gameloop",
+    "game-loop",
+    "lifecycle",
+    "pause",
+    "unitask",
+    "kernel"
+  ],
+  "dependencies": {
+    "com.cysharp.unitask": "2.5.10"
+  },
+  "samples": [
+    {
+      "displayName": "Manual Bootstrap",
+      "description": "Composition root without a DI container.",
+      "path": "Samples~/ManualBootstrap"
+    },
+    {
+      "displayName": "VContainer",
+      "description": "LifetimeScope wiring. Compiles only when VContainer is installed.",
+      "path": "Samples~/VContainer"
+    },
+    {
+      "displayName": "Zenject",
+      "description": "MonoInstaller wiring. Compiles only when Extenject is installed via UPM or AZEN_ZENJECT is defined.",
+      "path": "Samples~/Zenject"
+    }
+  ]
+}

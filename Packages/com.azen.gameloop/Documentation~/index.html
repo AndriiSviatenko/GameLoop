@@ -1,0 +1,787 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Azen GameLoop Docs</title>
+<meta name="description" content="Azen GameLoop — a DI-agnostic game-loop kernel for Unity 6: lifecycle, channels, pause reasons, scheduler."/>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@600;700&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,700&family=JetBrains+Mono:wght@400;500&display=swap"/>
+<style>
+:root{
+  --bg:#08090a;--bg1:#0c0f10;--bg2:#121617;--bg3:#192022;
+  --acc:#1fd1a0;--acc-soft:rgba(31,209,160,.12);--acc-line:rgba(31,209,160,.32);
+  --white:#fff;--txt:#e7eeec;--txt2:#c0cac7;--txt3:#86928f;--txt4:#56625f;
+  --line:#1b2224;--line2:#263033;
+  --red:#ff5c6c;--amber:#f0ad33;--blue:#79b8ff;--violet:#b48ef5;
+  --display:'Rajdhani',system-ui,sans-serif;
+  --sans:'DM Sans',system-ui,-apple-system,'Segoe UI',sans-serif;
+  --mono:'JetBrains Mono',ui-monospace,Consolas,monospace;
+  --nav:270px;--rail:212px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth;scroll-padding-top:24px;-webkit-text-size-adjust:100%}
+body{background:var(--bg);color:var(--txt2);font-family:var(--sans);font-size:15.5px;line-height:1.7}
+img,svg{max-width:100%}
+::selection{background:var(--acc);color:#04120d}
+::-webkit-scrollbar{width:9px;height:9px}
+::-webkit-scrollbar-track{background:var(--bg1)}
+::-webkit-scrollbar-thumb{background:#223032;border-radius:5px}
+a{color:var(--acc);text-decoration:none}
+a:hover{text-decoration:underline}
+:focus-visible{outline:2px solid var(--acc);outline-offset:3px;border-radius:3px}
+
+.side{position:fixed;inset:0 auto 0 0;width:var(--nav);background:var(--bg1);border-right:1px solid var(--line);display:flex;flex-direction:column;z-index:60}
+.brand{display:flex;align-items:center;gap:11px;padding:18px 18px 14px}
+.brand svg{width:34px;height:34px;flex:none}
+.brand-name{font-family:var(--display);font-size:20px;font-weight:700;color:var(--white);line-height:1.05}
+.brand-name span{color:var(--acc)}
+.brand-sub{font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--txt4);margin-top:3px}
+.search{padding:0 14px 12px}
+.search-box{display:flex;align-items:center;gap:8px;background:var(--bg2);border:1px solid var(--line2);border-radius:7px;padding:7px 10px}
+.search-box:focus-within{border-color:var(--acc-line)}
+.search-box svg{width:14px;height:14px;flex:none;stroke:var(--txt4)}
+.search input{flex:1;min-width:0;background:none;border:0;color:var(--txt);font:400 13.5px var(--sans);outline:none}
+.search input::placeholder{color:var(--txt4)}
+.search kbd{font:500 10px var(--mono);color:var(--txt4);border:1px solid var(--line2);border-radius:4px;padding:1px 5px}
+.navwrap{flex:1;overflow-y:auto;padding:4px 0 28px}
+.navgroup{font-size:10px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:var(--txt4);padding:16px 20px 6px}
+.side a{display:flex;align-items:center;gap:10px;padding:6px 20px;color:var(--txt3);font-size:14px;border-left:2px solid transparent;transition:color .13s,background .13s,border-color .13s}
+.side a:hover{color:var(--white);background:rgba(255,255,255,.03);text-decoration:none}
+.side a.on{color:var(--acc);border-left-color:var(--acc);background:var(--acc-soft)}
+.side a .n{font:500 11px var(--mono);color:var(--txt4);width:18px;flex:none}
+.side a.on .n{color:var(--acc)}
+.no-hits{display:none;padding:10px 20px;font-size:13px;color:var(--txt4)}
+
+main{margin-left:var(--nav);min-width:0;overflow-x:clip}
+.wrap{max-width:1180px;padding:0 44px}
+section{padding:54px 0;border-bottom:1px solid var(--line);scroll-margin-top:20px}
+.sec-head{display:flex;align-items:baseline;gap:12px;margin-bottom:6px}
+.sec-n{font:700 12px var(--mono);color:var(--acc)}
+.sec-kicker{font-size:10px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:var(--txt4)}
+h2{font-family:var(--display);font-size:36px;font-weight:700;color:var(--white);line-height:1.1;margin-bottom:12px;text-wrap:balance}
+h3{font-family:var(--display);font-size:24px;font-weight:600;color:var(--white);margin:38px 0 12px;scroll-margin-top:20px}
+h3:first-of-type{margin-top:26px}
+h4{font-size:16px;font-weight:700;color:var(--white);margin:22px 0 8px}
+p{max-width:72ch;margin-bottom:14px}
+.lead{font-size:17px;max-width:70ch;margin-bottom:26px}
+ul,ol{margin:0 0 16px 20px;max-width:72ch}
+li{margin-bottom:6px}
+li::marker{color:var(--txt4)}
+strong{color:var(--white);font-weight:700}
+
+.hero{padding:64px 0 46px;border-bottom:1px solid var(--line);position:relative;overflow:hidden}
+.hero::before{content:'';position:absolute;top:-160px;right:-80px;width:520px;height:520px;background:radial-gradient(circle,rgba(31,209,160,.1),transparent 65%);pointer-events:none}
+.hero-grid{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:40px;align-items:center}
+.eyebrow{display:inline-flex;align-items:center;gap:7px;font:700 10px var(--sans);letter-spacing:.15em;text-transform:uppercase;color:var(--acc);border:1px solid var(--acc-line);background:var(--acc-soft);border-radius:99px;padding:4px 12px;margin-bottom:18px}
+h1{font-family:var(--display);font-size:60px;font-weight:700;line-height:1;color:var(--white);letter-spacing:-.01em;margin-bottom:14px}
+h1 span{color:var(--acc)}
+.hero p{font-size:18px;max-width:56ch;margin-bottom:22px}
+.chips{display:flex;flex-wrap:wrap;gap:7px;margin-bottom:26px}
+.chip{font:400 11.5px var(--mono);color:var(--txt3);border:1px solid var(--line2);border-radius:99px;padding:3px 11px}
+.chip.hot{color:var(--acc);border-color:var(--acc-line);background:var(--acc-soft)}
+.cta{display:flex;flex-wrap:wrap;gap:10px}
+.btn{display:inline-flex;align-items:center;gap:9px;font-size:14.5px;font-weight:500;padding:11px 18px;border-radius:8px;border:1px solid var(--line2);background:var(--bg1);color:var(--txt);transition:.14s}
+.btn:hover{border-color:var(--acc-line);background:var(--acc-soft);color:var(--white);text-decoration:none}
+.btn.solid{background:var(--acc);border-color:var(--acc);color:#03130e;font-weight:700}
+.btn.solid:hover{background:#3fe6b7;color:#03130e}
+.btn .a{font:500 12px var(--mono);opacity:.72}
+
+.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:12px;margin-bottom:24px}
+.card{background:var(--bg1);border:1px solid var(--line);border-radius:10px;padding:16px 18px;transition:.14s;display:block;color:inherit}
+a.card:hover{border-color:var(--acc-line);background:var(--bg2);transform:translateY(-2px);text-decoration:none}
+.card-k{font:500 10px var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--acc);margin-bottom:7px}
+.card-t{font-size:15.5px;font-weight:700;color:var(--white);margin-bottom:5px}
+.card-d{font-size:13.5px;color:var(--txt3);line-height:1.6}
+
+.steps{display:flex;flex-direction:column;gap:8px;counter-reset:st}
+.step{display:grid;grid-template-columns:34px minmax(0,1fr);gap:16px;padding:18px 0;border-top:1px solid var(--line)}
+.step:first-child{border-top:0}
+.step::before{counter-increment:st;content:counter(st);width:30px;height:30px;border-radius:8px;background:var(--acc);color:#03130e;font:700 14px var(--mono);display:flex;align-items:center;justify-content:center;margin-top:2px}
+.step h4{font-family:var(--display);font-size:20px;font-weight:600;margin:0 0 6px}
+.step > div{min-width:0}
+
+.snippet{border:1px solid var(--line);border-radius:10px;overflow:hidden;margin-bottom:18px;background:var(--bg1);max-width:940px}
+.snippet-bar{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:7px 12px;background:var(--bg2);border-bottom:1px solid var(--line)}
+.snippet-name{font:400 11.5px var(--mono);color:var(--txt4)}
+.copy{font:500 11px var(--sans);letter-spacing:.06em;text-transform:uppercase;color:var(--txt3);background:none;border:1px solid var(--line2);border-radius:5px;padding:3px 9px;cursor:pointer;transition:.14s}
+.copy:hover{color:var(--white);border-color:var(--acc-line);background:var(--acc-soft)}
+.copy.done{color:var(--acc)}
+pre{margin:0;padding:15px 16px;overflow-x:auto;font-family:var(--mono);font-size:12.5px;line-height:1.75;color:#d2d8d6;white-space:pre;tab-size:4}
+.kw{color:#ff7ab0}.ty{color:var(--blue)}.st{color:#98c379}.cm{color:#5b6865}.fn{color:#e2d38a}.nu{color:var(--amber)}
+code{font-family:var(--mono);font-size:12.5px;background:var(--bg2);border:1px solid var(--line);border-radius:5px;padding:1px 6px;color:var(--blue)}
+
+.note{border:1px solid var(--line);border-left:3px solid var(--acc);background:var(--bg1);border-radius:0 10px 10px 0;padding:14px 18px;margin-bottom:18px;max-width:76ch;font-size:14.5px}
+.note b{color:var(--white)}
+.note.warn{border-left-color:var(--amber)}
+.note.bad{border-left-color:var(--red)}
+
+.tbl{overflow-x:auto;margin-bottom:22px;border:1px solid var(--line);border-radius:10px;max-width:1000px}
+table{width:100%;border-collapse:collapse;font-size:14px}
+th{background:var(--bg2);text-align:left;font:700 10px var(--sans);letter-spacing:.1em;text-transform:uppercase;color:var(--txt4);padding:10px 14px;border-bottom:1px solid var(--line);white-space:nowrap}
+td{padding:11px 14px;border-bottom:1px solid #141a1b;color:var(--txt2);vertical-align:top;line-height:1.6}
+tr:last-child td{border-bottom:0}
+tbody tr:hover td{background:rgba(255,255,255,.018)}
+.api td:first-child{font-family:var(--mono);font-size:12.5px;color:var(--blue);white-space:nowrap}
+.pill{display:inline-block;font:700 9.5px var(--sans);letter-spacing:.1em;text-transform:uppercase;padding:2px 8px;border-radius:99px;background:var(--bg3);color:var(--txt3)}
+.pill.acc{background:var(--acc-soft);color:var(--acc)}
+
+.flow{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:26px}
+.flow-step{background:var(--bg1);border:1px solid var(--line);border-radius:10px;padding:14px 16px;position:relative}
+.flow-step::after{content:'→';position:absolute;right:-13px;top:50%;transform:translateY(-50%);color:var(--txt4);font-size:14px}
+.flow-step:last-child::after{content:''}
+.flow-k{font:500 10px var(--mono);letter-spacing:.12em;text-transform:uppercase;color:var(--acc);margin-bottom:6px}
+.flow-t{font-size:15px;font-weight:700;color:var(--white);margin-bottom:4px}
+.flow-d{font-size:13px;color:var(--txt3);line-height:1.55}
+
+.two{display:grid;grid-template-columns:repeat(auto-fit,minmax(330px,1fr));gap:16px;margin-bottom:22px;max-width:1000px}
+.two .panel{background:var(--bg1);border:1px solid var(--line);border-radius:10px;padding:18px 20px;min-width:0}
+.two .panel h4{margin-top:0}
+.two .snippet{margin-bottom:0;background:var(--bg2)}
+
+.states{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-bottom:22px;font:500 13px var(--mono)}
+.state{padding:6px 14px;border-radius:8px;border:1px solid var(--line2);background:var(--bg1);color:var(--white)}
+.state.play{border-color:var(--acc-line);color:var(--acc);background:var(--acc-soft)}
+.state.pause{border-color:rgba(240,173,51,.35);color:var(--amber)}
+.state.stop{border-color:rgba(255,92,108,.35);color:var(--red)}
+.arrow{color:var(--txt4)}
+
+.rail{position:fixed;top:0;right:0;width:var(--rail);height:100vh;padding:34px 20px;overflow-y:auto;display:none}
+.rail-t{font:700 10px var(--sans);letter-spacing:.16em;text-transform:uppercase;color:var(--txt4);margin-bottom:12px}
+.rail a{display:block;font-size:13px;color:var(--txt3);padding:4px 0 4px 12px;border-left:2px solid var(--line);line-height:1.45}
+.rail a:hover{color:var(--white);text-decoration:none}
+.rail a.on{color:var(--acc);border-left-color:var(--acc)}
+
+footer{padding:34px 0 56px;color:var(--txt4);font-size:13px}
+footer a{color:var(--txt3)}
+.top{position:fixed;right:22px;bottom:22px;width:40px;height:40px;border-radius:10px;background:var(--bg2);border:1px solid var(--line2);color:var(--txt3);display:flex;align-items:center;justify-content:center;cursor:pointer;opacity:0;pointer-events:none;transition:.2s;z-index:50}
+.top.show{opacity:1;pointer-events:auto}
+.top:hover{color:var(--white);border-color:var(--acc-line);background:var(--acc-soft)}
+
+@media (min-width:1500px){.rail{display:block}main{margin-right:var(--rail)}}
+@media (max-width:1240px){:root{--nav:236px}.wrap{padding:0 32px}h1{font-size:50px}}
+@media (max-width:960px){
+  .side{position:sticky;top:0;inset:auto;width:auto;height:auto;border-right:0;border-bottom:1px solid var(--line);background:rgba(12,15,16,.97);backdrop-filter:blur(8px)}
+  .brand{padding:12px 16px 10px}.brand-sub{display:none}.search{padding:0 16px 10px}
+  .navwrap{display:flex;flex-direction:row;overflow-x:auto;overflow-y:hidden;padding:0 10px 3px;gap:2px}
+  .navgroup{display:none}
+  .side a{flex:0 0 auto;white-space:nowrap;border-left:0;border-bottom:2px solid transparent;padding:8px 11px;font-size:13.5px}
+  .side a.on{border-bottom-color:var(--acc);background:transparent}
+  .side a .n{display:none}
+  main{margin-left:0}
+  html{scroll-padding-top:110px}
+  section{padding:40px 0;scroll-margin-top:106px}
+  h3{scroll-margin-top:106px}
+  .wrap{padding:0 18px}
+  .hero{padding:34px 0 32px}.hero-grid{grid-template-columns:1fr;gap:24px}.hero-art{display:none}
+  h1{font-size:38px}.hero p{font-size:16px}h2{font-size:28px}h3{font-size:21px}
+  .two,.cards,.flow{grid-template-columns:1fr}.flow-step::after{content:''}
+}
+@media (max-width:430px){h1{font-size:32px}.wrap{padding:0 14px}.step{grid-template-columns:1fr;gap:8px}.btn{width:100%}}
+@media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}*{transition:none!important}}
+</style>
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="logo" viewBox="0 0 512 512">
+    <rect width="512" height="512" rx="72" fill="#0c0f10"/>
+    <path d="M256 104a152 152 0 1 1-131 75" fill="none" stroke="#1fd1a0" stroke-width="44" stroke-linecap="round"/>
+    <path d="M94 150l40 64 58-54z" fill="#1fd1a0"/>
+    <path d="M222 196v120l100-60z" fill="#fff"/>
+  </symbol>
+</svg>
+
+<nav class="side">
+  <div class="brand">
+    <svg viewBox="0 0 512 512"><use href="#logo"/></svg>
+    <div>
+      <div class="brand-name">Game<span>Loop</span></div>
+      <div class="brand-sub">Azen · v1.0</div>
+    </div>
+  </div>
+  <div class="search">
+    <label class="search-box">
+      <svg viewBox="0 0 24 24" fill="none" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+      <input id="q" type="search" placeholder="Search the docs" autocomplete="off" aria-label="Search the documentation"/>
+      <kbd>/</kbd>
+    </label>
+  </div>
+  <div class="navwrap" id="navwrap">
+    <div class="navgroup">Start</div>
+    <a href="#overview"><span class="n">01</span>Overview</a>
+    <a href="#install"><span class="n">02</span>Install</a>
+    <a href="#quickstart"><span class="n">03</span>Quick start</a>
+    <div class="navgroup">Build</div>
+    <a href="#concepts"><span class="n">04</span>Concepts</a>
+    <a href="#channels"><span class="n">05</span>Channels &amp; pause</a>
+    <a href="#scheduler"><span class="n">06</span>Scheduler</a>
+    <a href="#integration"><span class="n">07</span>Integration</a>
+    <div class="navgroup">Operate</div>
+    <a href="#debug"><span class="n">08</span>Debugging</a>
+    <a href="#perf"><span class="n">09</span>Performance</a>
+    <div class="navgroup">Reference</div>
+    <a href="#reference"><span class="n">10</span>API reference</a>
+    <a href="#trouble"><span class="n">11</span>Troubleshooting</a>
+    <div class="no-hits" id="nohits">Nothing matches that.</div>
+  </div>
+</nav>
+
+<aside class="rail" id="rail" aria-label="On this page"></aside>
+
+<main>
+<div class="wrap">
+
+<header class="hero">
+  <div class="hero-grid">
+    <div>
+      <div class="eyebrow">Unity 6 · game-loop kernel · v1.0</div>
+      <h1>Azen <span>GameLoop</span></h1>
+      <p>One place decides which systems run, when, and in what order. Lifecycle, channels, pause reasons and timers — without an <code>Update()</code> in every MonoBehaviour.</p>
+      <div class="chips">
+        <span class="chip hot">Unity 6000.0+</span>
+        <span class="chip">UniTask</span>
+        <span class="chip">DI-agnostic</span>
+        <span class="chip">EditMode tests</span>
+        <span class="chip">MIT</span>
+      </div>
+      <div class="cta">
+        <a class="btn solid" href="#quickstart"><span class="a">03</span>Quick start</a>
+        <a class="btn" href="#reference"><span class="a">10</span>API reference</a>
+        <a class="btn" href="https://github.com/AndriiSviatenko/GameLoop">GitHub</a>
+      </div>
+    </div>
+    <div class="hero-art">
+      <svg width="230" height="230" viewBox="0 0 512 512" aria-hidden="true"><use href="#logo"/></svg>
+    </div>
+  </div>
+</header>
+
+<section id="overview">
+  <div class="sec-head"><span class="sec-n">01</span><span class="sec-kicker">Overview</span></div>
+  <h2>What you get</h2>
+  <p class="lead">GameLoop does not replace Unity's PlayerLoop. Unity still calls <code>Update</code>, <code>FixedUpdate</code> and <code>LateUpdate</code> — but one driver receives them and routes each phase to your systems by clear rules: game state, channel, priority.</p>
+
+  <div class="flow">
+    <div class="flow-step"><div class="flow-k">Unity</div><div class="flow-t">PlayerLoop</div><div class="flow-d">Update, FixedUpdate, LateUpdate.</div></div>
+    <div class="flow-step"><div class="flow-k">Bridge</div><div class="flow-t">GameLoopDriver</div><div class="flow-d">The only MonoBehaviour that receives the phases.</div></div>
+    <div class="flow-step"><div class="flow-k">Facade</div><div class="flow-t">GameLoop</div><div class="flow-d">State machine, pause reasons, scheduler.</div></div>
+    <div class="flow-step"><div class="flow-k">Channels</div><div class="flow-t">Groups</div><div class="flow-d">Pause, time scale and priority per channel.</div></div>
+    <div class="flow-step"><div class="flow-k">You</div><div class="flow-t">Systems</div><div class="flow-d">Plain C# classes or MonoBehaviours.</div></div>
+  </div>
+
+  <h3 id="ov-features">Features</h3>
+  <div class="cards">
+    <div class="card"><div class="card-k">Lifecycle</div><div class="card-t">One state machine</div><div class="card-d"><code>Off → Play ⇄ Pause → Stop</code>, plus restart. Systems react through small listener interfaces with async callbacks.</div></div>
+    <div class="card"><div class="card-k">Ticking</div><div class="card-t">Phases &amp; priorities</div><div class="card-d"><code>Tick</code>, <code>FixedTick</code>, <code>LateTick</code>, <code>TickAsync</code>. Higher priority runs first inside a phase.</div></div>
+    <div class="card"><div class="card-k">Channels</div><div class="card-t">Pause a part of the game</div><div class="card-d">Freeze <code>Gameplay</code> while <code>UI</code> keeps ticking. Slow down one channel without touching <code>Time.timeScale</code>.</div></div>
+    <div class="card"><div class="card-k">Pause</div><div class="card-t">Pause reasons</div><div class="card-d">Menu over dialog over focus loss: the game resumes only when every reason is gone.</div></div>
+    <div class="card"><div class="card-k">Timers</div><div class="card-t">Scheduler</div><div class="card-d"><code>Every</code> and <code>Once</code> live in game time: they respect channel pause and time scale.</div></div>
+    <div class="card"><div class="card-k">Safety</div><div class="card-t">Queued transitions</div><div class="card-d">A pause requested while a start is still awaiting its listeners runs right after it, instead of throwing.</div></div>
+    <div class="card"><div class="card-k">Tooling</div><div class="card-t">Debugger &amp; Profiler</div><div class="card-d">Live state window, plus Profiler markers per channel and per system type.</div></div>
+    <div class="card"><div class="card-k">Integration</div><div class="card-t">No container required</div><div class="card-d">Works with a plain composition root, VContainer or Zenject — samples for all three.</div></div>
+  </div>
+
+  <h3 id="ov-samples">Samples</h3>
+  <div class="tbl"><table>
+    <thead><tr><th>Sample</th><th>What it shows</th><th>Compiles when</th></tr></thead>
+    <tbody>
+      <tr><td><strong>Manual Bootstrap</strong></td><td>Driver, registration, start from a MonoBehaviour</td><td>Always</td></tr>
+      <tr><td><strong>VContainer</strong></td><td><code>LifetimeScope</code>, systems as entry points, starter after <code>IInitializable</code></td><td><code>jp.hadashikick.vcontainer</code> is installed</td></tr>
+      <tr><td><strong>Zenject</strong></td><td><code>MonoInstaller</code>, <code>BindExecutionOrder</code> for the starter</td><td><code>com.svermeulen.extenject</code> is installed or <code>AZEN_ZENJECT</code> is defined</td></tr>
+      <tr><td><strong>Demo</strong> <span class="pill acc">repository</span></td><td>Falling balls, round timer, score, every pause mode on keys</td><td>Open <code>Assets/Demo/Scenes/DemoScene</code> in the repository</td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<section id="install">
+  <div class="sec-head"><span class="sec-n">02</span><span class="sec-kicker">Setup</span></div>
+  <h2>Install</h2>
+  <p class="lead">Two options: Package Manager from git, or a <code>.unitypackage</code> from the release page. Both need UniTask.</p>
+
+  <div class="steps">
+    <div class="step"><div>
+      <h4>Add the OpenUPM registry for UniTask</h4>
+      <p>The package declares <code>com.cysharp.unitask</code> as a dependency, so Unity must know where to find it:</p>
+      <div class="snippet"><div class="snippet-bar"><span class="snippet-name">Packages/manifest.json</span><button class="copy">Copy</button></div><pre>"scopedRegistries": [
+  {
+    "name": "package.openupm.com",
+    "url": "https://package.openupm.com",
+    "scopes": ["com.cysharp"]
+  }
+]</pre></div>
+    </div></div>
+
+    <div class="step"><div>
+      <h4>Add the package from git</h4>
+      <p>Package Manager → <strong>+</strong> → <em>Add package from git URL</em>:</p>
+      <div class="snippet"><div class="snippet-bar"><span class="snippet-name">git URL</span><button class="copy">Copy</button></div><pre>https://github.com/AndriiSviatenko/GameLoop.git?path=Packages/com.azen.gameloop#v1.0.0</pre></div>
+    </div></div>
+
+    <div class="step"><div>
+      <h4>Or import the Unity package</h4>
+      <p>Download <code>Azen.GameLoop-1.0.0.unitypackage</code> from the <a href="https://github.com/AndriiSviatenko/GameLoop/releases/latest">latest release</a> and import it via <em>Assets → Import Package → Custom Package</em>. It lands in <code>Assets/Azen.GameLoop</code>, samples included as regular folders.</p>
+    </div></div>
+
+    <div class="step"><div>
+      <h4>Reference the assembly</h4>
+      <p><code>Azen.GameLoop</code> is auto-referenced, so code without an asmdef sees it. If your code has an asmdef, add <code>Azen.GameLoop</code> and <code>UniTask</code> to its references.</p>
+    </div></div>
+  </div>
+</section>
+
+<section id="quickstart">
+  <div class="sec-head"><span class="sec-n">03</span><span class="sec-kicker">Tutorial</span></div>
+  <h2>Quick start</h2>
+  <p class="lead">A round timer that counts down while the game plays and stops the round when time is up — in three files.</p>
+
+  <div class="steps">
+    <div class="step"><div>
+      <h4>Write a system</h4>
+      <p>Implement only the interfaces you need. This one wants a callback on init and a call every frame:</p>
+      <div class="snippet"><div class="snippet-bar"><span class="snippet-name">RoundTimer.cs</span><button class="copy">Copy</button></div><pre class="cs">public sealed class RoundTimer : IGameElement, IGameInitListener, IGameTickable
+{
+    private readonly IGameManager _game;
+
+    public RoundTimer(IGameManager game) =&gt; _game = game;
+
+    public float RemainingSeconds { get; private set; }
+
+    public UniTask OnInit(CancellationToken cancellationToken)
+    {
+        RemainingSeconds = 30f;
+        return UniTask.CompletedTask;
+    }
+
+    public void Tick(float deltaTime)
+    {
+        if (RemainingSeconds &lt;= 0f) return;
+
+        RemainingSeconds -= deltaTime;
+        if (RemainingSeconds &lt;= 0f)
+            _game.StopAsync().Forget();
+    }
+}</pre></div>
+    </div></div>
+
+    <div class="step"><div>
+      <h4>Create the loop, register, start</h4>
+      <p>Create the loop in <code>Awake</code>, register systems, start in <code>Start</code>. Everything registered before <code>StartAsync</code> receives <code>OnInit</code> and <code>OnStartGame</code>.</p>
+      <div class="snippet"><div class="snippet-bar"><span class="snippet-name">GameBootstrap.cs</span><button class="copy">Copy</button></div><pre class="cs">public sealed class GameBootstrap : MonoBehaviour
+{
+    private IGameLoop _loop;
+
+    private void Awake()
+    {
+        _loop = gameObject.AddComponent&lt;GameLoopDriver&gt;()
+            .Bootstrap(logger: DebugLogGameLoopLogger.Instance);
+
+        _loop.Add(new RoundTimer(_loop), GameLoopChannels.Gameplay, GameLoopPriority.Normal);
+    }
+
+    private void Start() =&gt; _loop.StartAsync(destroyCancellationToken).Forget();
+}</pre></div>
+    </div></div>
+
+    <div class="step"><div>
+      <h4>Scene objects: inherit GameLoopElement</h4>
+      <p>A MonoBehaviour that needs a <code>Transform</code> registers itself in <code>OnEnable</code> and unregisters in <code>OnDisable</code>. It never gets Unity's <code>Update</code>.</p>
+      <div class="snippet"><div class="snippet-bar"><span class="snippet-name">SpinningCube.cs</span><button class="copy">Copy</button></div><pre class="cs">public sealed class SpinningCube : GameLoopElement, IGameTickable
+{
+    private void Awake() =&gt; Configure(GameLoopChannels.Gameplay);
+
+    public void Tick(float deltaTime) =&gt; transform.Rotate(0f, 90f * deltaTime, 0f);
+}</pre></div>
+      <div class="note"><b>Spawned during Play?</b> Lifecycle callbacks are not replayed. An object spawned mid-game gets ticks and future transitions, but not <code>OnInit</code>/<code>OnStartGame</code> — initialise it in its factory or <code>Awake</code>.</div>
+    </div></div>
+  </div>
+</section>
+
+<section id="concepts">
+  <div class="sec-head"><span class="sec-n">04</span><span class="sec-kicker">Model</span></div>
+  <h2>Concepts</h2>
+
+  <h3 id="c-states">Game state</h3>
+  <div class="states">
+    <span class="state">Off</span><span class="arrow">→ StartAsync →</span>
+    <span class="state play">Play</span><span class="arrow">⇄ Pause / Resume ⇄</span>
+    <span class="state pause">Pause</span><span class="arrow">→ StopAsync →</span>
+    <span class="state stop">Stop</span>
+  </div>
+  <div class="tbl"><table class="api">
+    <thead><tr><th>Call</th><th>From</th><th>Listeners called</th><th>Result</th></tr></thead>
+    <tbody>
+      <tr><td>StartAsync</td><td>Off, Stop</td><td><code>OnInit</code> (first start only), <code>OnStartGame</code></td><td>Play</td></tr>
+      <tr><td>PauseAsync / PauseFor</td><td>Play</td><td><code>OnPauseGame</code> — only for the first reason</td><td>Pause</td></tr>
+      <tr><td>ResumeAsync / ResumeFor</td><td>Pause</td><td><code>OnResumeGame</code> — only when the last reason is removed</td><td>Play</td></tr>
+      <tr><td>StopAsync</td><td>Play, Pause</td><td><code>OnStopGame</code></td><td>Stop; pause reasons and channel pauses cleared</td></tr>
+      <tr><td>RestartAsync</td><td>any</td><td><code>OnStopGame</code> (if running), <code>OnInit</code>, <code>OnStartGame</code></td><td>Play</td></tr>
+      <tr><td>Destroy</td><td>any</td><td><code>OnDestroy</code> in reverse priority</td><td>Loop is dead; further transitions are ignored</td></tr>
+    </tbody>
+  </table></div>
+  <p><code>StateChanged</code> fires on every transition. Restart goes straight from the current state to <code>Play</code>; it does not raise <code>Stop</code>.</p>
+
+  <h3 id="c-elements">Element interfaces</h3>
+  <div class="tbl"><table class="api">
+    <thead><tr><th>Interface</th><th>Member</th><th>Called</th></tr></thead>
+    <tbody>
+      <tr><td>IGameTickable</td><td><code>Tick(float)</code></td><td>Every <code>Update</code> while the channel can tick</td></tr>
+      <tr><td>IGameFixedTickable</td><td><code>FixedTick(float)</code></td><td>Every <code>FixedUpdate</code>, with <code>FixedDeltaTime</code></td></tr>
+      <tr><td>IGameLateTickable</td><td><code>LateTick(float)</code></td><td>Every <code>LateUpdate</code>, after all ticks of the frame</td></tr>
+      <tr><td>IGameAsyncTickable</td><td><code>TickAsync(float, CancellationToken)</code></td><td>Every <code>Update</code>, but never overlapping itself; the token is cancelled on destroy</td></tr>
+      <tr><td>IGameTickRate</td><td><code>TickInterval</code></td><td>Throttles Tick/FixedTick/LateTick to this interval, in channel time</td></tr>
+      <tr><td>IGameInitListener</td><td><code>OnInit</code></td><td>First start and every restart</td></tr>
+      <tr><td>IGameStartedListener</td><td><code>OnStartGame</code></td><td>Start and restart</td></tr>
+      <tr><td>IGamePausedListener</td><td><code>OnPauseGame</code></td><td>Global pause, or its channel paused</td></tr>
+      <tr><td>IGameResumedListener</td><td><code>OnResumeGame</code></td><td>Global resume, or its channel resumed</td></tr>
+      <tr><td>IGameStoppedListener</td><td><code>OnStopGame</code></td><td>Stop and restart</td></tr>
+      <tr><td>IGameDestroyListener</td><td><code>OnDestroy()</code></td><td>Loop destroyed</td></tr>
+    </tbody>
+  </table></div>
+  <div class="note warn"><b>Naming trap:</b> <code>IGameDestroyListener.OnDestroy()</code> has the same name as Unity's message. Do not implement it on a <code>GameLoopElement</code> — override <code>OnDestroy</code> there instead.</div>
+
+  <h3 id="c-priority">Phase and priority</h3>
+  <p>The interface picks <em>when</em> in the frame a system runs. Priority picks <em>who goes first</em> among systems of the same channel and phase. Higher numbers run first:</p>
+  <div class="tbl"><table class="api">
+    <thead><tr><th>Constant</th><th>Value</th></tr></thead>
+    <tbody>
+      <tr><td>GameLoopPriority.Critical</td><td>300</td></tr>
+      <tr><td>GameLoopPriority.High</td><td>200</td></tr>
+      <tr><td>GameLoopPriority.Normal</td><td>100</td></tr>
+      <tr><td>GameLoopPriority.Low</td><td>0</td></tr>
+    </tbody>
+  </table></div>
+  <p>A <code>High</code> late tick never jumps ahead of a <code>Normal</code> tick — those are different parts of the frame.</p>
+
+  <h3 id="c-registration">Registration</h3>
+  <div class="two">
+    <div class="panel"><h4>Direct</h4>
+      <div class="snippet"><div class="snippet-bar"><span class="snippet-name">C#</span><button class="copy">Copy</button></div><pre class="cs">var handle = loop.Add(enemyAi, GameLoopChannels.Gameplay, GameLoopPriority.High);
+loop.Remove(handle);</pre></div>
+    </div>
+    <div class="panel"><h4>Fluent</h4>
+      <div class="snippet"><div class="snippet-bar"><span class="snippet-name">C#</span><button class="copy">Copy</button></div><pre class="cs">var handle = loop.For(enemyAi).Gameplay().High().Add();
+loop.Remove(handle);</pre></div>
+    </div>
+  </div>
+  <p>Adding and removing tickables takes effect at the start of the next pass of that list, so a system can remove itself inside its own <code>Tick</code>.</p>
+
+  <h3 id="c-transitions">Transitions and reentrancy</h3>
+  <p>Transitions run one at a time. A call made while another transition is still awaiting its listeners is queued and runs after it; a cancelled queued call leaves the queue without blocking it.</p>
+  <div class="note bad"><b>Do not await a transition from a listener.</b> A synchronous call from inside <code>OnStartGame</code>, <code>OnPauseGame</code> and friends throws <code>InvalidOperationException</code> (or logs a warning when <code>ThrowOnReentrancy = false</code>). Awaiting a transition after an <code>await</code> inside a listener deadlocks: both wait for each other. Fire it from a tick or with <code>.Forget()</code>.</div>
+</section>
+
+<section id="channels">
+  <div class="sec-head"><span class="sec-n">05</span><span class="sec-kicker">Control</span></div>
+  <h2>Channels &amp; pause</h2>
+  <p class="lead">A channel is a group of systems you want to control together. Built-ins are <code>Default</code>, <code>Gameplay</code>, <code>UI</code> and <code>Cutscene</code>; any string works as a custom channel.</p>
+
+  <h3 id="ch-pause">Pause a channel</h3>
+  <div class="snippet"><div class="snippet-bar"><span class="snippet-name">C#</span><button class="copy">Copy</button></div><pre class="cs">await loop.PauseChannelAsync(GameLoopChannels.Gameplay, ct);   // gameplay stops, UI keeps ticking
+await loop.ResumeChannelAsync(GameLoopChannels.Gameplay, ct);</pre></div>
+  <ul>
+    <li>Pausing an already paused channel does nothing; <code>ChannelStateChanged</code> fires only on a real change.</li>
+    <li>A paused channel stays paused through a global resume, and is not notified twice by a global pause.</li>
+    <li>While the game is not playing, <code>GetChannelState</code> reports the global state.</li>
+    <li>Stop and restart clear every channel pause.</li>
+  </ul>
+
+  <h3 id="ch-reasons">Pause reasons</h3>
+  <p>Global pause is a set of reasons. The game returns to <code>Play</code> only when the set is empty:</p>
+  <div class="snippet"><div class="snippet-bar"><span class="snippet-name">C#</span><button class="copy">Copy</button></div><pre class="cs">await loop.PauseFor(PauseReason.Menu, ct);
+await loop.PauseFor(PauseReason.Dialog, ct);
+await loop.ResumeFor(PauseReason.Dialog, ct);   // still paused: the menu is open
+await loop.ResumeFor(PauseReason.Menu, ct);     // Play
+
+var tutorial = PauseReason.Custom("Tutorial");</pre></div>
+  <div class="tbl"><table class="api">
+    <thead><tr><th>Reason</th><th>Kind</th><th>Removed by ResumeAllAsync</th></tr></thead>
+    <tbody>
+      <tr><td>Manual, Menu, Dialog</td><td>Manual</td><td>Yes</td></tr>
+      <tr><td>Focus, Cutscene</td><td>System</td><td>No — only its own <code>ResumeFor</code></td></tr>
+    </tbody>
+  </table></div>
+  <p><code>PauseAsync</code>/<code>ResumeAsync</code> are shortcuts for the <code>Manual</code> reason. Inherit <code>GameLoopFocusHandlerBase</code> to pause with <code>Focus</code> when the window loses focus.</p>
+
+  <h3 id="ch-timescale">Time scale</h3>
+  <div class="snippet"><div class="snippet-bar"><span class="snippet-name">C#</span><button class="copy">Copy</button></div><pre class="cs">loop.SetChannelTimeScale(GameLoopChannels.Gameplay, 0.25f);</pre></div>
+  <p>Systems of that channel are still called every frame, with a four times smaller <code>deltaTime</code>. Scheduler timers of the channel slow down too. <code>Time.timeScale</code>, Animator and physics are not touched.</p>
+
+  <h3 id="ch-ui">Keep UI alive while paused</h3>
+  <div class="snippet"><div class="snippet-bar"><span class="snippet-name">C#</span><button class="copy">Copy</button></div><pre class="cs">loop.SetChannelTickWhenPaused(GameLoopChannels.UI, true);</pre></div>
+  <p>That channel ticks (and runs its timers) while the game is paused, stopped or not started — so input in it can resume or restart the game.</p>
+</section>
+
+<section id="scheduler">
+  <div class="sec-head"><span class="sec-n">06</span><span class="sec-kicker">Time</span></div>
+  <h2>Scheduler</h2>
+  <p class="lead">Delayed and repeating calls in game time. Not a thread and not a coroutine: the scheduler is updated by the loop on the main thread, right after the frame's ticks.</p>
+  <div class="snippet"><div class="snippet-bar"><span class="snippet-name">BallSpawner.cs</span><button class="copy">Copy</button></div><pre class="cs">public UniTask OnStartGame(CancellationToken cancellationToken)
+{
+    _spawn = _loop.Every(1.2f, SpawnBall, GameLoopChannels.Gameplay);
+    return UniTask.CompletedTask;
+}
+
+public UniTask OnStopGame(CancellationToken cancellationToken)
+{
+    _loop.Cancel(_spawn);
+    return UniTask.CompletedTask;
+}</pre></div>
+  <div class="tbl"><table>
+    <thead><tr><th>Timer channel</th><th>Advances when</th></tr></thead>
+    <tbody>
+      <tr><td>none</td><td>The game is in <code>Play</code></td></tr>
+      <tr><td>a channel</td><td>That channel can tick: not channel-paused, and the game plays or the channel ticks when paused. Uses the channel time scale.</td></tr>
+    </tbody>
+  </table></div>
+  <p>At time scale <code>0.25</code> a 1.2 s interval takes 4.8 real seconds — spawn rhythm slows together with movement.</p>
+</section>
+
+<section id="integration">
+  <div class="sec-head"><span class="sec-n">07</span><span class="sec-kicker">Wire it up</span></div>
+  <h2>Integration</h2>
+  <p class="lead">One composition root, one <code>GameLoopDriver</code>, one loop. A container changes only how the reference is delivered.</p>
+
+  <h3 id="int-contracts">Two contracts, one object</h3>
+  <div class="two">
+    <div class="panel"><h4>IGameManager</h4><p>State and commands: start, pause, resume, stop, restart, pause reasons. Give it to a pause menu or a round timer.</p></div>
+    <div class="panel"><h4>IGameLoop : IGameManager</h4><p>Adds registration, channels, time scale and the scheduler. Give it to bootstrap code and system coordinators.</p></div>
+  </div>
+  <p>With DI, bind the <strong>same instance</strong> to both.</p>
+
+  <h3 id="int-vcontainer">VContainer</h3>
+  <div class="snippet"><div class="snippet-bar"><span class="snippet-name">GameLoopLifetimeScope.cs</span><button class="copy">Copy</button></div><pre class="cs">protected override void Configure(IContainerBuilder builder)
+{
+    var loop = _driver.Bootstrap(logger: DebugLogGameLoopLogger.Instance);
+
+    builder.RegisterInstance(loop).As&lt;IGameLoop, IGameManager&gt;();
+    builder.RegisterEntryPoint&lt;EnemyAi&gt;();          // registers itself in IInitializable
+    builder.RegisterEntryPoint&lt;GameLoopStarter&gt;();  // StartAsync in IStartable
+}</pre></div>
+
+  <h3 id="int-zenject">Zenject</h3>
+  <div class="snippet"><div class="snippet-bar"><span class="snippet-name">GameLoopInstaller.cs</span><button class="copy">Copy</button></div><pre class="cs">public override void InstallBindings()
+{
+    var loop = _driver.Bootstrap(logger: DebugLogGameLoopLogger.Instance);
+
+    Container.Bind(typeof(IGameLoop), typeof(IGameManager)).FromInstance(loop);
+    Container.BindInterfacesTo&lt;EnemyAi&gt;().AsSingle();
+    Container.BindInterfacesTo&lt;GameLoopStarter&gt;().AsSingle();
+    Container.BindExecutionOrder&lt;GameLoopStarter&gt;(100);
+}</pre></div>
+  <p>Systems register themselves in <code>Initialize</code> and remove themselves in <code>Dispose</code>; the starter runs after them, so every system sees <code>OnInit</code> and <code>OnStartGame</code>.</p>
+
+  <h3 id="int-element">GameLoopElement and a container</h3>
+  <p><code>GameLoopElement</code> resolves <code>GameLoop.Active</code> by default. To use an injected loop, override <code>ResolveLoop</code> and call <code>TryRegister()</code> once the dependency arrives:</p>
+  <div class="snippet"><div class="snippet-bar"><span class="snippet-name">FallingBall.cs</span><button class="copy">Copy</button></div><pre class="cs">public void Construct(IGameLoop loop)
+{
+    _loop = loop;
+    TryRegister();
+}
+
+protected override IGameLoop ResolveLoop() =&gt; _loop;</pre></div>
+</section>
+
+<section id="debug">
+  <div class="sec-head"><span class="sec-n">08</span><span class="sec-kicker">Inspect</span></div>
+  <h2>Debugging</h2>
+  <h3 id="dbg-window">GameLoop Debugger</h3>
+  <p><em>Window → Azen → GameLoop Debugger</em> shows state, sub-state, pause reasons, every channel with its state and time scale, and buttons for each transition in Play Mode.</p>
+  <h3 id="dbg-profiler">Profiler markers</h3>
+  <div class="tbl"><table class="api">
+    <thead><tr><th>Marker</th><th>Covers</th></tr></thead>
+    <tbody>
+      <tr><td>GameLoop.&lt;Channel&gt;.Tick</td><td>All ticks of one channel; also <code>.FixedTick</code> and <code>.LateTick</code></td></tr>
+      <tr><td>GameLoop.&lt;SystemType&gt;</td><td>One system's call</td></tr>
+    </tbody>
+  </table></div>
+  <h3 id="dbg-errors">Errors</h3>
+  <p>An exception in one system is logged and the rest of the frame continues. <code>DebugLogGameLoopLogger</code> prints the message and the exception with its stack trace. Pass <code>throwOnErrors: true</code> to the <code>GameLoop</code> constructor to rethrow instead — the original stack trace is kept.</p>
+</section>
+
+<section id="perf">
+  <div class="sec-head"><span class="sec-n">09</span><span class="sec-kicker">Budget</span></div>
+  <h2>Performance</h2>
+  <ul>
+    <li>Ticking iterates plain lists of structs sorted by priority; no allocation per frame.</li>
+    <li><code>IGameTickRate</code> lowers the frequency of an expensive system — profile first, then throttle.</li>
+    <li><code>TickBudgetMs</code> stops a channel's <code>Tick</code> pass once the budget is spent. Low-priority systems can then starve every frame; treat it as a safety net, not a scheduler.</li>
+    <li>Transitions allocate a small snapshot of listeners; they are rare, not per frame.</li>
+  </ul>
+</section>
+
+<section id="reference">
+  <div class="sec-head"><span class="sec-n">10</span><span class="sec-kicker">Look up</span></div>
+  <h2>API reference</h2>
+
+  <h3 id="ref-manager">IGameManager</h3>
+  <div class="tbl"><table class="api"><tbody>
+    <tr><td>GameState State</td><td>Current state; <code>event StateChanged</code></td></tr>
+    <tr><td>StartAsync / StopAsync / RestartAsync</td><td>Lifecycle transitions; each takes a <code>CancellationToken</code>, extensions without one exist</td></tr>
+    <tr><td>PauseAsync / ResumeAsync</td><td>Pause and resume with the <code>Manual</code> reason</td></tr>
+    <tr><td>PauseFor / ResumeFor(reason, ct)</td><td>Add or remove one pause reason</td></tr>
+    <tr><td>ResumeAllAsync(ct)</td><td>Remove every <code>Manual</code>-kind reason</td></tr>
+    <tr><td>IsPausedFor(reason), PauseReasons</td><td>Inspect the reason set</td></tr>
+  </tbody></table></div>
+
+  <h3 id="ref-loop">IGameLoop</h3>
+  <div class="tbl"><table class="api"><tbody>
+    <tr><td>Add(element, channel, priority)</td><td>Register; returns a <code>GameLoopElementHandle</code></td></tr>
+    <tr><td>Remove(handle | element), Contains</td><td>Unregister / query</td></tr>
+    <tr><td>PauseChannelAsync / ResumeChannelAsync</td><td>Pause one channel; <code>event ChannelStateChanged</code></td></tr>
+    <tr><td>GetChannelState(channel)</td><td><code>Pause</code> if the channel is paused while playing, otherwise the global state</td></tr>
+    <tr><td>Set/GetChannelTimeScale</td><td>Finite, ≥ 0</td></tr>
+    <tr><td>SetChannelTickWhenPaused</td><td>Channel ticks while the game is not playing</td></tr>
+    <tr><td>SubState, SetSubState, SubStateChanged</td><td>Free-form tag for your own phases (menu, round, results)</td></tr>
+    <tr><td>InitializeAsync, IsInitialized, Destroy</td><td>Manual init and teardown</td></tr>
+    <tr><td>ThrowOnReentrancy, TickBudgetMs</td><td>Safety settings</td></tr>
+    <tr><td>Scheduler</td><td><code>Every</code>, <code>Once</code>, <code>Cancel</code>, <code>CancelAll</code>, <code>Clear</code></td></tr>
+  </tbody></table></div>
+
+  <h3 id="ref-ext">Extensions</h3>
+  <div class="tbl"><table class="api"><tbody>
+    <tr><td>loop.For(element)</td><td>Fluent registration: <code>.On(channel)</code>, <code>.Gameplay()</code>, <code>.UI()</code>, <code>.Cutscene()</code>, <code>.Priority(n)</code>, <code>.High()</code>…, <code>.Add()</code></td></tr>
+    <tr><td>loop.Every / Once / Cancel</td><td>Scheduler shortcuts</td></tr>
+    <tr><td>manager.StartAsync() …</td><td>Transitions without a token</td></tr>
+  </tbody></table></div>
+
+  <h3 id="ref-unity">Unity types</h3>
+  <div class="tbl"><table class="api"><tbody>
+    <tr><td>GameLoopDriver</td><td><code>Bootstrap(timeProvider, logger)</code> creates the loop; forwards Update/FixedUpdate/LateUpdate; destroys the loop on <code>OnDestroy</code></td></tr>
+    <tr><td>GameLoopElement</td><td>Self-registering MonoBehaviour: <code>Configure(channel, priority)</code>, <code>TryRegister</code>, <code>TryUnregister</code>, <code>ResolveLoop</code>, <code>Handle</code></td></tr>
+    <tr><td>GameLoopFocusHandlerBase</td><td>Pauses with <code>PauseReason.Focus</code>; override the <code>GameLoop</code> property</td></tr>
+    <tr><td>GameLoop constructor</td><td><code>(ITimeProvider, IGameLoopLogger, throwOnErrors, throwOnReentrancy, tickBudgetMs)</code></td></tr>
+    <tr><td>ITimeProvider, IGameLoopLogger</td><td>Replace time and logging, e.g. in tests</td></tr>
+  </tbody></table></div>
+</section>
+
+<section id="trouble">
+  <div class="sec-head"><span class="sec-n">11</span><span class="sec-kicker">Fix</span></div>
+  <h2>Troubleshooting</h2>
+  <div class="tbl"><table>
+    <thead><tr><th>Symptom</th><th>Cause</th><th>Fix</th></tr></thead>
+    <tbody>
+      <tr><td>A system never gets <code>OnStartGame</code></td><td>It was registered after <code>StartAsync</code></td><td>Register in <code>Awake</code>, start in <code>Start</code>; or initialise it yourself</td></tr>
+      <tr><td><code>InvalidOperationException: GameLoop reentrancy</code></td><td>A listener called a transition synchronously</td><td>Call it from a tick, or after the listener finished</td></tr>
+      <tr><td>The game hangs on a transition</td><td>A listener awaits another transition</td><td>Do not await transitions inside listeners</td></tr>
+      <tr><td>Input stops working on pause</td><td>The input system is in a channel that does not tick when paused</td><td><code>SetChannelTickWhenPaused(UI, true)</code></td></tr>
+      <tr><td>Timer never fires</td><td>The game or its channel is not playing</td><td>Check <code>GetChannelState</code>; pick the right channel</td></tr>
+      <tr><td>Slow-mo does not affect physics</td><td>Channel time scale only scales <code>deltaTime</code> passed to systems</td><td>Use <code>Time.timeScale</code> for engine systems</td></tr>
+      <tr><td>A system ticks twice</td><td>It was added twice</td><td>Keep the handle; check <code>Contains</code> before adding</td></tr>
+      <tr><td>“Cysharp could not be found”</td><td>UniTask is missing</td><td>Add the OpenUPM registry (see <a href="#install">Install</a>)</td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<footer>
+  <strong style="color:var(--txt2)">Azen GameLoop</strong> · Unity 6000.0+ · MIT ·
+  <a href="https://github.com/AndriiSviatenko/GameLoop">GitHub</a> ·
+  <a href="https://github.com/AndriiSviatenko/GameLoop/releases/latest">Releases</a>
+</footer>
+
+</div>
+</main>
+
+<button class="top" id="top" aria-label="Back to top">↑</button>
+
+<script>
+(function () {
+  var KW = 'public|private|protected|internal|sealed|static|readonly|class|interface|struct|void|var|new|return|await|async|using|namespace|if|else|foreach|for|in|true|false|null|const|override|float|int|bool|string|this|default|get|set';
+  var re = new RegExp('(\\/\\/[^\\n]*)|("(?:[^"\\\\\\n]|\\\\.)*")|\\b(' + KW + ')\\b|\\b(\\d+(?:\\.\\d+)?f?)\\b|\\b([A-Za-z_]\\w*)(?=\\s*[(<])|\\b([A-Z]\\w*)\\b', 'g');
+  function esc(s) { return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
+  document.querySelectorAll('pre.cs').forEach(function (pre) {
+    var src = pre.textContent, out = '', last = 0, m;
+    re.lastIndex = 0;
+    while ((m = re.exec(src))) {
+      var cls = m[1] ? 'cm' : m[2] ? 'st' : m[3] ? 'kw' : m[4] ? 'nu' : m[5] ? 'fn' : 'ty';
+      out += esc(src.slice(last, m.index)) + '<span class="' + cls + '">' + esc(m[0]) + '</span>';
+      last = re.lastIndex;
+    }
+    pre.innerHTML = out + esc(src.slice(last));
+  });
+
+  var sections = [].slice.call(document.querySelectorAll('main section'));
+  var navLinks = [].slice.call(document.querySelectorAll('.side a'));
+  var rail = document.getElementById('rail');
+  var byId = {};
+  navLinks.forEach(function (a) { byId[a.getAttribute('href').slice(1)] = a; });
+
+  document.querySelectorAll('.copy').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      var pre = btn.closest('.snippet').querySelector('pre');
+      var done = function () {
+        btn.textContent = 'Copied';
+        btn.classList.add('done');
+        setTimeout(function () { btn.textContent = 'Copy'; btn.classList.remove('done'); }, 1400);
+      };
+      if (navigator.clipboard) navigator.clipboard.writeText(pre.innerText).then(done, done);
+      else done();
+    });
+  });
+
+  function buildRail(section) {
+    var heads = [].slice.call(section.querySelectorAll('h3[id]'));
+    if (!heads.length) { rail.innerHTML = ''; return; }
+    var html = '<div class="rail-t">On this page</div>';
+    heads.forEach(function (h) { html += '<a href="#' + h.id + '">' + esc(h.textContent) + '</a>'; });
+    rail.innerHTML = html;
+  }
+
+  var current = null;
+  function spy() {
+    var y = window.scrollY + window.innerHeight * 0.25;
+    var active = sections[0];
+    sections.forEach(function (s) { if (s.offsetTop <= y) active = s; });
+    if (active !== current) {
+      current = active;
+      navLinks.forEach(function (a) { a.classList.remove('on'); });
+      if (byId[active.id]) byId[active.id].classList.add('on');
+      buildRail(active);
+    }
+    var railLinks = [].slice.call(rail.querySelectorAll('a'));
+    var activeHead = null;
+    railLinks.forEach(function (a) {
+      var h = document.getElementById(a.getAttribute('href').slice(1));
+      if (h && h.getBoundingClientRect().top <= window.innerHeight * 0.3) activeHead = a;
+    });
+    railLinks.forEach(function (a) { a.classList.toggle('on', a === activeHead); });
+    document.getElementById('top').classList.toggle('show', window.scrollY > 900);
+  }
+  var ticking = false;
+  addEventListener('scroll', function () {
+    if (ticking) return;
+    ticking = true;
+    requestAnimationFrame(function () { spy(); ticking = false; });
+  }, { passive: true });
+  spy();
+
+  var q = document.getElementById('q');
+  var nohits = document.getElementById('nohits');
+  var haystack = navLinks.map(function (a) {
+    var sec = document.getElementById(a.getAttribute('href').slice(1));
+    var extra = sec ? [].slice.call(sec.querySelectorAll('h3,h4,.card-t,.flow-t,td:first-child')).map(function (n) { return n.textContent; }).join(' ') : '';
+    return (a.textContent + ' ' + extra).toLowerCase();
+  });
+  q.addEventListener('input', function () {
+    var term = q.value.trim().toLowerCase();
+    var hits = 0;
+    navLinks.forEach(function (a, i) {
+      var show = !term || haystack[i].indexOf(term) > -1;
+      a.style.display = show ? '' : 'none';
+      if (show) hits++;
+    });
+    document.querySelectorAll('.navgroup').forEach(function (g) { g.style.display = term ? 'none' : ''; });
+    nohits.style.display = hits ? 'none' : 'block';
+  });
+  q.addEventListener('keydown', function (e) {
+    if (e.key !== 'Enter') return;
+    var first = navLinks.filter(function (a) { return a.style.display !== 'none'; })[0];
+    if (first) { location.hash = first.getAttribute('href'); q.blur(); }
+  });
+  addEventListener('keydown', function (e) {
+    if (e.key === '/' && document.activeElement !== q) { e.preventDefault(); q.focus(); }
+  });
+  document.getElementById('top').addEventListener('click', function () { scrollTo({ top: 0 }); });
+})();
+</script>
+</body>
+</html>
